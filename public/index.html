@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<title>Tableau score</title>
+</head>
+<body>
+
+	<form action="">
+		<label for="">Kirai</label>
+		<input type="radio" name="vote" id="Kirai" value="Kirai">
+		<label for="">Extarns</label>
+		<input type="radio" name="vote" id="Extarns" value="Extarns">
+		<label for="">Zefren</label>
+		<input type="radio" name="vote" id="Zefren" value="Zefren">
+	</form>
+	
+    <ul id="votes"></ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        $(function()
+		{
+			var socket = io();
+			
+			$("input[type=radio][name=vote]").on("change", function () 
+			{
+				socket.emit("vote", this.value);
+			})
+			
+			socket.on("updateVote",function(data)
+			{
+				$("#votes").html("");
+				Object.keys(data).map( (key,value) => {
+					$("#votes").append(
+						`
+						<li> 
+							<strong> ${key} </strong>
+							${data[key]} 
+						</li>
+						`
+					)
+				})
+			})
+		})
+    </script>
+</body>
+
+</html>
