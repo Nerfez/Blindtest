@@ -1,40 +1,29 @@
-<!DOCTYPE html>
-<html lang="fr">
+<!Doctype html>
+<html lang="fr"></html>
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-	<title>Tableau score</title>
-</head>
-<body>
-
-	<form action="">
-		<label for="">Kirai</label>
-		<input type="radio" name="vote" id="Kirai" value="Kirai">
-		<label for="">Extarns</label>
-		<input type="radio" name="vote" id="Extarns" value="Extarns">
-		<label for="">Zefren</label>
-		<input type="radio" name="vote" id="Zefren" value="Zefren">
-	</form>
-	
-    <ul id="votes"></ul>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-	<script src="/socket.io/socket.io.js"></script>
-
-    <script>
-        $(function()
-		{
-			var socket = io();
-			
-			$("input[type=radio][name=vote]").on("change", function () 
+  <meta charset="UTF-8"/>
+  <title>Devine Le Film!</title>
+  <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .messages{
+    	background: #ddd;
+    	border: 1px solid #333;
+    	padding: .5em .1em;
+    	min-height : 300px;
+    	margin-bottom: 20px;
+    }
+    img{
+    	height: 600px;
+		width: 800px;
+    }
+  </style>
+  <script>
+    var socket=io();
+	socket.on('updateVote',function(data)
 			{
-				socket.emit("vote", this.value);
-			})
-			
-			socket.on("updateVote",function(data)
-			{
+				console.log("ajout val");
 				$("#votes").html("");
 				Object.keys(data).map( (key,value) => {
 					$("#votes").append(
@@ -44,11 +33,51 @@
 							${data[key]} 
 						</li>
 						`
-					)
-				})
-			})
-		})
-    </script>
-</body>
+					);
+				});
+			});
+			
+    socket.on('addimage',function(msg,base64image){
+    	$('.messages').empty();
+		$('.messages')
+    	.prepend(
+    		$('<p>').append($('<b>').text(""),'<a target="_blank" href="'+ base64image +'"><img src="'+ base64image+'" /></a>'
+    		)
+    	);
+    });
+    
+    $(function(){
+    	$("#imageFile").on('change',function(e){
+    		var file = e.originalEvent.target.files[0];
+    		var reader = new FileReader();
+    		reader.onload = function(evt){
+    			socket.emit('user image',evt.target.result);
+    		};
+    		reader.readAsDataURL(file);
+    	});
+		
+		$("input[type=radio][name=vote]").on('change', function () 
+			{
+				console.log(this.value);
+				socket.emit('vote', this.value);
+			});
+	});
+	    
+  </script>
+</head>
+<body>
 
-</html>
+  <div class="messages"></div>
+  <input type="file" id="imageFile"/>
+  	
+	<form action="">
+	<label for="">Kirai</label>
+	<input type="radio" name="vote" id="Kirai" value="Kirai">
+	<label for="">Extarns</label>
+	<input type="radio" name="vote" id="Extarns" value="Extarns">
+	<label for="">Zefren</label>
+	<input type="radio" name="vote" id="Zefren" value="Zefren">
+	</form>
+	
+    <ul id="votes"></ul>
+</body>
