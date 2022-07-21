@@ -1,13 +1,14 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-const io = require('socket.io')("http://guyot.alwaysdata.net");
+const io = require('socket.io')(http);
 
 app.use(express.static(__dirname+'/public'));
 
 var vote = {
-	Zefren: 0,
 	Kirai: 0,
+	Oinnez: 0,
+	Mattéo: 0,
 	Extarns: 0
 }
 
