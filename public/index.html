@@ -7,6 +7,21 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
+  
+  ul {
+  list-style: none;
+  }
+  
+	.backgroundmsg{
+    	background: #ddd;
+    	border: 1px solid #333;
+    	padding: .5em .1em;
+    	min-height : 300px;
+    	margin-bottom: 20px;
+		width: 800px;
+		height: 600px;
+    }
+  
     .messages{
     	background: #ddd;
     	border: 1px solid #333;
@@ -15,6 +30,7 @@
     	margin-bottom: 20px;
 		width: 800px;
     }
+	
     img{
     	height: 600px;
 		width: 800px;
@@ -55,8 +71,158 @@
 }
 
   </style>
+
+</head>
+<body>
+
+  <div class="row">
+	<div class="column">
+		<div class="messages"></div>
+		<input type="file" id="imageFile"/>
+		<button onclick="login()" id="connexion">S'identifier</button>
+	</div>
+	<div class="column">
+		<h2>Classement des points</h2>
+		<form action="">
+			<label for="">Kirai</label>
+			<input type="radio" name="vote" id="Kirai" value="Kirai">
+			<label for="">Extarns</label>
+			<input type="radio" name="vote" id="Extarns" value="Extarns">
+			<label for="">Oinnez</label>
+			<input type="radio" name="vote" id="Oinnez" value="Oinnez">
+			<label for="">Mattéo</label>
+			<input type="radio" name="vote" id="Mattéo" value="Mattéo">
+		</form>
+	
+		<ul id="votes"></ul>
+		
+		<div class="backgroundmsg">
+			<ul id="mychat">
+				<li><span id="pseudo"></span> <label id="message"></label></li>
+			</ul>
+		</div>
+		
+		<input class="inputMessage" id="inputMessage" placeholder="Entrez le nom de l'album ..."></input><button onclick="EcrireMessage()" id="envoyerMessage">Envoyer</button><button onclick="ClearChat()" id="Clear">Clear</button>
+		
+	</div>
+  </div>
+	
+</body>
   <script>
    	var socket = io();
+	//All songs list
+	let compteur_song = -1;
+let All_song = [
+   {
+     album: "Temps mort",
+     singer: "Booba"
+   },
+   {
+     album: "Land",
+     singer: "Kekra"
+   },
+   {
+     album: "Kolaf",
+     singer: "La Fève"
+   },
+   {
+     album: "Destin",
+     singer: "Ninho"
+   },
+   {
+     album: "Que La Famille",
+     singer: "PNL"
+   },
+   {
+     album: "LA VIE EST BELLE",
+     singer: "Gambi"
+   },
+   {
+     album: "Pacifique",
+     singer: "Disiz"
+   },
+   {
+     album: "L'Amour",
+     singer: "Disiz"
+   },
+   {
+     album: "Nuit",
+     singer: "Jazzy Bazz"
+   },
+   {
+     album: "BLO",
+     singer: "13 Block"
+   },
+   {
+     album: "Civilisation",
+     singer: "Orelsan"
+   },
+   {
+     album: "Adios Bahamas",
+     singer: "Népal"
+   },
+   {
+     album: "Dans la légende",
+     singer: "PNL"
+   },
+   {
+     album: "Thank You God",
+     singer: "F430"
+   },
+   {
+     album: "1994",
+     singer: "Hamza"
+   },
+   {
+     album: "Spécial",
+     singer: "Siboy"
+   },
+   {
+     album: "Projet Blue Beam",
+     singer: "Freeze Corleone"
+   },
+   {
+     album: "Sans rêve",
+     singer: "DTF"
+   },
+   {
+     album: "Lithopédion",
+     singer: "Damso"
+   },
+   {
+     album: "Trinity",
+     singer: "Laylow"
+   },
+   {
+     album: "Imany",
+     singer: "Dinos"
+   },
+   {
+     album: "Jeannine",
+     singer: "Lomepal"
+   },
+   {
+     album: "UMLA",
+     singer: "Alpha Wann"
+   },
+   {
+     album: "A7",
+     singer: "SCH"
+   },
+   {
+     album: "Le Monde Chico",
+     singer: "PNL"
+   },
+   {
+     album: "Xeu",
+     singer: "Vald"
+   },
+   {
+     album: "Ateyaba",
+     singer: "Ateyaba"
+   }
+];
+	var NamePlayer = "Random qui pu";
 	socket.on('updateVote',function(data)
 			{
 				console.log("ajout val");
@@ -74,12 +240,60 @@
 			});
 			
     socket.on('addimage',function(msg,base64image){
+		compteur_song++;
     	$('.messages').empty();
 		$('.messages')
     	.prepend(
     		$('<p>').append($('<b>').text(""),'<a target="_blank" href="'+ base64image +'"><img src="'+ base64image+'" /></a>'
     		)
     	);
+    });
+	
+	 socket.on('updateNewPlayer',function(data){
+	 const d = new Date();
+		let h = addZero(d.getHours());
+		let m = addZero(d.getMinutes());
+		let s = addZero(d.getSeconds());
+		let time = h + ":" + m + ":" + s;
+        let text = "s'est connecté";
+		
+    	// Create an "li" node:
+		const node = document.createElement("li");
+
+		// Create a text node:
+		const textnode = document.createTextNode(data + " | " + text + " | " + time);
+
+		// Append the text node to the "li" node:
+		node.appendChild(textnode);
+
+		// Append the "li" node to the list:
+		document.getElementById("mychat").appendChild(node);
+    });
+	
+	socket.on('updateNewMessage',function(NamePlayer,MyMessage){
+		const d = new Date();
+		let h = addZero(d.getHours());
+		let m = addZero(d.getMinutes());
+		let s = addZero(d.getSeconds());
+		let time = h + ":" + m + ":" + s;
+        let text = "s'est connecté";
+		
+		let answer = CheckCorrectAnswer(NamePlayer, MyMessage);
+		
+		if(answer == false){
+    	// Create an "li" node:
+		const node = document.createElement("li");
+
+		// Create a text node:
+		const textnode = document.createTextNode(NamePlayer + " | " + MyMessage + " | " + time);
+
+		// Append the text node to the "li" node:
+		node.appendChild(textnode);
+
+		// Append the "li" node to the list:
+		document.getElementById("mychat").appendChild(node);
+		}
+		
     });
     
     $(function(){
@@ -95,35 +309,75 @@
 		$("input[type=radio][name=vote]").on('change', function () 
 			{
 				console.log(this.value);
-				socket.emit('vote', this.value);
+				socket.emit('voteDown', this.value);
 				this.checked = false;
 			});
 	});
-	    
+	
+		function addZero(i) {
+		if (i < 10) {i = "0" + i}
+		return i;
+		}
+	
+	    function login() {
+		
+		let person = prompt("Met un pseudo:", "Zefren");
+		if (person == null || person == "") {
+		}
+		else {
+			NamePlayer = person;
+			socket.emit('user name',NamePlayer);
+		}
+    }
+	
+	var inputListennerMessage = document.getElementById("inputMessage");
+	inputListennerMessage.addEventListener("keypress", (event)=> {
+    if (event.key === "Enter") {
+      event.preventDefault();
+	  document.getElementById("envoyerMessage").click();
+    }
+  });
+  
+  function EcrireMessage(){
+  const MyMessage = document.getElementById("inputMessage").value;
+  socket.emit('user message',NamePlayer,MyMessage);
+  document.getElementById("inputMessage").value = "";
+  }
+  
+  function ClearChat()
+  {
+	let text = "delete the chat pls";
+	socket.emit('delete message', text);
+  }
+  
+  function CheckCorrectAnswer(NamePlayer, MyMessage){
+  let x = false;
+  if(MyMessage == All_song[compteur_song].album){
+  socket.emit('vote', NamePlayer);
+  socket.emit('correct album', NamePlayer, MyMessage);
+  x = true;
+  } else if(MyMessage == All_song[compteur_song].singer){
+  socket.emit('vote', NamePlayer);
+  socket.emit('correct singer', NamePlayer, MyMessage);
+  x = true;
+  }else {
+  x = false;
+  }
+  return x;
+  }
+  
+  socket.on('correct Singer', function(NamePlayer, MyMessage){
+    All_song[compteur_song].singer = "";
+    alert('Bravo, '+ NamePlayer + ' a trouvé ' + MyMessage);
+	});
+	
+	socket.on('correct Album', function(NamePlayer, MyMessage){
+    All_song[compteur_song].album = "";
+    alert('Bravo, '+ NamePlayer + ' a trouvé ' + MyMessage);
+	});
+  
+  socket.on('delete chat', function(data){
+	document.getElementById("mychat").innerHTML = "";
+  });
+  
   </script>
-</head>
-<body>
-
-  <div class="row">
-	<div class="column">
-		<div class="messages"></div>
-		<input type="file" id="imageFile"/>
-	</div>
-	<div class="column">
-		<h2>Classement de cons</h2>
-		<form action="">
-			<label for="">Kirai</label>
-			<input type="radio" name="vote" id="Kirai" value="Kirai">
-			<label for="">Extarns</label>
-			<input type="radio" name="vote" id="Extarns" value="Extarns">
-			<label for="">Oinnez</label>
-			<input type="radio" name="vote" id="Oinnez" value="Oinnez">
-			<label for="">Mattéo</label>
-			<input type="radio" name="vote" id="Mattéo" value="Mattéo">
-		</form>
-	
-		<ul id="votes"></ul>
-	</div>
-  </div>
-	
-</body>
