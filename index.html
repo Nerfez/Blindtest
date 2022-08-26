@@ -1,263 +1,384 @@
-<!DOCTYPE html>
-<html lang="fr">
+<!Doctype html>
+<html lang="fr"></html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="css/style.css">
-	<title>Randomizer LoL</title>
+  <meta charset="UTF-8"/>
+  <title>Devine L'Album!</title>
+  <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+  
+  ul {
+  list-style: none;
+  }
+  
+	.backgroundmsg{
+    	background: #ddd;
+    	border: 1px solid #333;
+    	padding: .5em .1em;
+    	min-height : 300px;
+    	margin-bottom: 20px;
+		width: 800px;
+		height: 600px;
+    }
+  
+    .messages{
+    	background: #ddd;
+    	border: 1px solid #333;
+    	padding: .5em .1em;
+    	min-height : 300px;
+    	margin-bottom: 20px;
+		width: 800px;
+    }
+	
+    img{
+    	height: 600px;
+		width: 800px;
+    }
+	
+	.row {
+	display: flex;
+	}
+
+	/* Create two equal columns that sits next to each other */
+	.column {
+	flex: 50%;
+	padding: 10px;
+	height: 300px; /* Should be removed. Only for demonstration */
+	}
+	
+	html, body {
+  width: 100%;
+  height:100%;
+}
+	
+	body {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+  </style>
+
 </head>
 <body>
-<div class="row">
 
-
-  <div class="column">
-<canvas id="canvas" width="500" height="500"></canvas>
-<input type="button" value="SPIN" style="background-color: #2565AE; min-width: 124px; min-height: 62px;
-    font-size: 2em;
-    margin: 6px 3px; "class="button" id='spin' />
-	<input type="button" value="CLEAR" style="background-color: #2565AE; min-width: 124px; min-height: 62px;
-    font-size: 2em;
-    margin: 6px 3px; "class="button" onclick="Clear()" />
+  <div class="row">
+	<div class="column">
+		<div class="messages"></div>
+		<input type="file" id="imageFile"/>
+		<button onclick="login()" id="connexion">S'identifier</button>
 	</div>
-  
-  
-  
-  <div class="column">
-	<div class="wrapper">
-		<canvas class="color_border border" id="responsive_canvas"></canvas>
-	</div>
+	<div class="column">
+		<h2>Classement des points</h2>
+		<form action="">
+			<label for="">Mattéo</label>
+			<input type="radio" name="vote" id="Mattéo" value="Mattéo">
+			<label for="">Extarns</label>
+			<input type="radio" name="vote" id="Extarns" value="Extarns">
+			<label for="">Kirai</label>
+			<input type="radio" name="vote" id="Kirai" value="Kirai">
+      <label for="">Oinnez</label>
+			<input type="radio" name="vote" id="Oinnez" value="Oinnez">
+		</form>
 	
-	<div class="backgroundmsg border">
+		<ul id="votes"></ul>
+		
+		<div class="backgroundmsg">
 			<ul id="mychat">
-				<li>HISTORIQUE DES ROLES ET CHAMPIONS</li>
-				<li><span id="role"></span><label id="champions"></label></li>
+				<li><span id="pseudo"></span> <label id="message"></label></li>
 			</ul>
 		</div>
+		
+		<input type="text" class="inputMessage" id="inputMessage" placeholder="Entrez le nom de l'album ..."><button onclick="EcrireMessage()" id="envoyerMessage">Envoyer</button><button onclick="ClearChat()" id="Clear">Clear</button>
+		
 	</div>
-</div>
-
-
+  </div>
 	
 </body>
-
-<script>
-var options = ["TOPLANE", "JUNGLE", "MIDLANE", "ADC", "SUPPORT"];
-
-var startAngle = 0;
-var arc = Math.PI / (options.length / 2);
-var spinTimeout = null;
-
-var spinArcStart = 10;
-var spinTime = 0;
-var spinTimeTotal = 0;
-
-var ctx;
-
-document.getElementById("spin").addEventListener("click", spin);
-
-function byte2Hex(n) {
-  var nybHexString = "0123456789ABCDEF";
-  return String(nybHexString.substr((n >> 4) & 0x0F,1)) + nybHexString.substr(n & 0x0F,1);
-}
-
-function RGB2Color(r,g,b) {
-	return '#' + byte2Hex(r) + byte2Hex(g) + byte2Hex(b);
-}
-
-function getColor(item, maxitem) {
-  var phase = 0;
-  var center = 128;
-  var width = 127;
-  var frequency = Math.PI*2/maxitem;
-  
-  red   = Math.sin(frequency*item+2+phase) * width + center;
-  green = Math.sin(frequency*item+0+phase) * width + center;
-  blue  = Math.sin(frequency*item+4+phase) * width + center;
-  
-  return RGB2Color(red,green,blue);
-}
-
-function drawRouletteWheel() {
-  var canvas = document.getElementById("canvas");
-  if (canvas.getContext) {
-    var outsideRadius = 200;
-    var textRadius = 160;
-    var insideRadius = 125;
-
-    ctx = canvas.getContext("2d");
-    ctx.clearRect(0,0,500,500);
-
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-
-    ctx.font = 'bold 12px Helvetica, Arial';
-
-    for(var i = 0; i < options.length; i++) {
-      var angle = startAngle + i * arc;
-      //ctx.fillStyle = colors[i];
-      ctx.fillStyle = getColor(i, options.length);
-
-      ctx.beginPath();
-      ctx.arc(250, 250, outsideRadius, angle, angle + arc, false);
-      ctx.arc(250, 250, insideRadius, angle + arc, angle, true);
-      ctx.stroke();
-      ctx.fill();
-
-      ctx.save();
-      ctx.shadowOffsetX = -1;
-      ctx.shadowOffsetY = -1;
-      ctx.shadowBlur    = 0;
-      ctx.shadowColor   = "rgb(220,220,220)";
-      ctx.fillStyle = "black";
-      ctx.translate(250 + Math.cos(angle + arc / 2) * textRadius, 
-                    250 + Math.sin(angle + arc / 2) * textRadius);
-      ctx.rotate(angle + arc / 2 + Math.PI / 2);
-      var text = options[i];
-      ctx.fillText(text, -ctx.measureText(text).width / 2, 0);
-      ctx.restore();
-    } 
-
-    //Arrow
-    ctx.fillStyle = "black";
-    ctx.beginPath();
-    ctx.moveTo(250 - 4, 250 - (outsideRadius + 5));
-    ctx.lineTo(250 + 4, 250 - (outsideRadius + 5));
-    ctx.lineTo(250 + 4, 250 - (outsideRadius - 5));
-    ctx.lineTo(250 + 9, 250 - (outsideRadius - 5));
-    ctx.lineTo(250 + 0, 250 - (outsideRadius - 13));
-    ctx.lineTo(250 - 9, 250 - (outsideRadius - 5));
-    ctx.lineTo(250 - 4, 250 - (outsideRadius - 5));
-    ctx.lineTo(250 - 4, 250 - (outsideRadius + 5));
-    ctx.fill();
-  }
-}
-
-function spin() {
-  spinAngleStart = Math.random() * 10 + 10;
-  spinTime = 0;
-  spinTimeTotal = Math.random() * 3 + 6 * 1000;
-  rotateWheel();
-}
-
-function rotateWheel() {
-  spinTime += 30;
-  if(spinTime >= spinTimeTotal) {
-    stopRotateWheel();
-    return;
-  }
-  var spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
-  startAngle += (spinAngle * Math.PI / 180);
-  drawRouletteWheel();
-  spinTimeout = setTimeout('rotateWheel()', 30);
-}
-
-function stopRotateWheel() {
-  clearTimeout(spinTimeout);
-  var degrees = startAngle * 180 / Math.PI + 90;
-  var arcd = arc * 180 / Math.PI;
-  var index = Math.floor((360 - degrees % 360) / arcd);
-  ctx.save();
-  ctx.font = 'bold 30px Helvetica, Arial';
-  var text = options[index]
-  ctx.fillText(text, 250 - ctx.measureText(text).width / 2, 250 + 10);
-  ctx.restore();
-  Randomise();
-}
-
-function easeOut(t, b, c, d) {
-  var ts = (t/=d)*t;
-  var tc = ts*t;
-  return b+c*(tc + -3*ts + 3*t);
-}
-
-drawRouletteWheel();
-
-let champ_Name = 'sup_bard';
-let TOP = ['top_aatrox', 'top_akali'];
-let JGL = ['jgl_belveth', 'jgl_amumu'];
-let MID = ['mid_ahri', 'mid_akali', 'mid_aurelion'];
-let ADC = ['adc_caitlyn', 'adc_draven'];
-let SUP = ['sup_alistar', 'sup_bard'];
-
-function Randomise() {
-let degrees = startAngle * 180 / Math.PI + 90;
-  let arcd = arc * 180 / Math.PI;
-  let index = Math.floor((360 - degrees % 360) / arcd);
-let text = options[index];
-	if(text == "TOPLANE")
-	{
-	let champ_Number = getRandomInt(TOP.length);
-	champ_Name = TOP[champ_Number];
-	}
-	if(text == "JUNGLE")
-	{
-	let champ_Number = getRandomInt(JGL.length);
-	champ_Name = JGL[champ_Number];
-	}
-	if(text == "MIDLANE")
-	{
-	let champ_Number = getRandomInt(MID.length);
-	champ_Name = MID[champ_Number];
-	}
-	if(text == "ADC")
-	{
-	let champ_Number = getRandomInt(ADC.length);
-	champ_Name = ADC[champ_Number];
-	}
-	if(text == "SUPPORT")
-	{
-	let champ_Number = getRandomInt(SUP.length);
-	champ_Name = SUP[champ_Number];
-	}
-	document.getElementById("responsive_canvas").style.backgroundImage = "url('img/"+champ_Name+".jpg')";
-	EcrireMessage();
-}
-
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-  function EcrireMessage(){
-  let degrees = startAngle * 180 / Math.PI + 90;
-  let arcd = arc * 180 / Math.PI;
-  let index = Math.floor((360 - degrees % 360) / arcd);
-  let text = options[index];
-  const d = new Date();
+  <script>
+   	var socket = io();
+	//All songs list
+	let compteur_song = -1;
+let All_song = [
+   {
+     album: "Temps mort",
+     singer: "Booba"
+   },
+   {
+     album: "Land",
+     singer: "Kekra"
+   },
+   {
+     album: "Kolaf",
+     singer: "La Fève"
+   },
+   {
+     album: "Destin",
+     singer: "Ninho"
+   },
+   {
+     album: "Que La Famille",
+     singer: "PNL"
+   },
+   {
+     album: "LA VIE EST BELLE",
+     singer: "Gambi"
+   },
+   {
+     album: "Pacifique",
+     singer: "Disiz"
+   },
+   {
+     album: "L'Amour",
+     singer: "Disiz"
+   },
+   {
+     album: "Nuit",
+     singer: "Jazzy Bazz"
+   },
+   {
+     album: "BLO",
+     singer: "13 Block"
+   },
+   {
+     album: "Civilisation",
+     singer: "Orelsan"
+   },
+   {
+     album: "Adios Bahamas",
+     singer: "Népal"
+   },
+   {
+     album: "Dans la légende",
+     singer: "PNL"
+   },
+   {
+     album: "Thank You God",
+     singer: "F430"
+   },
+   {
+     album: "1994",
+     singer: "Hamza"
+   },
+   {
+     album: "Spécial",
+     singer: "Siboy"
+   },
+   {
+     album: "Projet Blue Beam",
+     singer: "Freeze Corleone"
+   },
+   {
+     album: "Sans rêve",
+     singer: "DTF"
+   },
+   {
+     album: "Lithopédion",
+     singer: "Damso"
+   },
+   {
+     album: "Trinity",
+     singer: "Laylow"
+   },
+   {
+     album: "Imany",
+     singer: "Dinos"
+   },
+   {
+     album: "Jeannine",
+     singer: "Lomepal"
+   },
+   {
+     album: "UMLA",
+     singer: "Alpha Wann"
+   },
+   {
+     album: "A7",
+     singer: "SCH"
+   },
+   {
+     album: "Le Monde Chico",
+     singer: "PNL"
+   },
+   {
+     album: "Xeu",
+     singer: "Vald"
+   },
+   {
+     album: "Ateyaba",
+     singer: "Ateyaba"
+   }
+];
+	var NamePlayer = "Random qui pu";
+	socket.on('updateVote',function(data)
+			{
+				console.log("ajout val");
+				$("#votes").html("");
+				Object.keys(data).map( (key,value) => {
+					$("#votes").append(
+						`
+						<li> 
+							<strong> ${key} </strong>
+							${data[key]} 
+						</li>
+						`
+					);
+				});
+			});
+			
+    socket.on('addimage',function(msg,base64image){
+		compteur_song++;
+    	$('.messages').empty();
+		$('.messages')
+    	.prepend(
+    		$('<p>').append($('<b>').text(""),'<a target="_blank" href="'+ base64image +'"><img src="'+ base64image+'" /></a>'
+    		)
+    	);
+    });
+	
+	 socket.on('updateNewPlayer',function(data){
+	 const d = new Date();
 		let h = addZero(d.getHours());
 		let m = addZero(d.getMinutes());
 		let s = addZero(d.getSeconds());
 		let time = h + ":" + m + ":" + s;
-  const node = document.createElement("li");
+        let text = "s'est connecté";
+		
+    	// Create an "li" node:
+		const node = document.createElement("li");
 
 		// Create a text node:
-		const textnode = document.createTextNode(text + " | " + champ_Name.substring(4, champ_Name.length) + " | " + time);
+		const textnode = document.createTextNode(data + " | " + text + " | " + time);
 
 		// Append the text node to the "li" node:
 		node.appendChild(textnode);
 
 		// Append the "li" node to the list:
 		document.getElementById("mychat").appendChild(node);
-  }
-  
-  function Clear()
-  {
-	document.getElementById("mychat").innerHTML = "";
-	const node = document.createElement("li");
+    });
+	
+	socket.on('updateNewMessage',function(NamePlayer,MyMessage){
+		const d = new Date();
+		let h = addZero(d.getHours());
+		let m = addZero(d.getMinutes());
+		let s = addZero(d.getSeconds());
+		let time = h + ":" + m + ":" + s;
+        let text = "s'est connecté";
+		
+		let answer = CheckCorrectAnswer(NamePlayer, MyMessage);
+		
+		if(answer == false){
+    	// Create an "li" node:
+		const node = document.createElement("li");
 
 		// Create a text node:
-		const textnode = document.createTextNode("HISTORIQUE DES ROLES ET CHAMPIONS");
+		const textnode = document.createTextNode(NamePlayer + " | " + MyMessage + " | " + time);
 
 		// Append the text node to the "li" node:
 		node.appendChild(textnode);
 
 		// Append the "li" node to the list:
 		document.getElementById("mychat").appendChild(node);
-	startAngle = 0;
-	drawRouletteWheel();
-  }
-  
-  function addZero(i) {
+		}
+		
+    });
+    
+    $(function(){
+    	$("#imageFile").on('change',function(e){
+    		var file = e.originalEvent.target.files[0];
+    		var reader = new FileReader();
+    		reader.onload = function(evt){
+    			socket.emit('user image',evt.target.result);
+    		};
+    		reader.readAsDataURL(file);
+    	});
+		
+		$("input[type=radio][name=vote]").on('change', function () 
+			{
+				console.log(this.value);
+				socket.emit('voteDown', this.value);
+				this.checked = false;
+			});
+	});
+	
+		function addZero(i) {
 		if (i < 10) {i = "0" + i}
 		return i;
 		}
-</script>
+	
+	    function login() {
+		
+		let person = prompt("Met un pseudo:", "Zefren");
+		if (person == null || person == "") {
+		}
+		else {
+			NamePlayer = person;
+			socket.emit('user name',NamePlayer);
+      console.log(NamePlayer + " s'est connecté!");
+		}
+    }
+	
+	var inputListennerMessage = document.getElementById("inputMessage");
+	inputListennerMessage.addEventListener("keypress", (event)=> {
+    if (event.key === "Enter") {
+      event.preventDefault();
+	  document.getElementById("envoyerMessage").click();
+    }
+  });
+  
+  function EcrireMessage(){
+  const MyMessage = document.getElementById("inputMessage").value;
+  socket.emit('user message',NamePlayer,MyMessage);
+  document.getElementById("inputMessage").value = "";
+  }
+  
+  function ClearChat()
+  {
+	let text = "delete the chat pls";
+	socket.emit('delete message', text);
+  }
+  
+  function CheckCorrectAnswer(NamePlayer, MyMessage){
+  let x = false;
+  if(MyMessage == All_song[compteur_song].album){
+  socket.emit('vote', NamePlayer);
+  socket.emit('correct album', NamePlayer, MyMessage);
+  x = true;
+  } else if(MyMessage == All_song[compteur_song].singer){
+  socket.emit('vote', NamePlayer);
+  socket.emit('correct singer', NamePlayer, MyMessage);
+  x = true;
+  }else {
+  x = false;
+  }
+  return x;
+  }
+  
+  socket.on('correct Singer', function(NamePlayer, MyMessage){
+    All_song[compteur_song].singer = "";
+    alert('Bravo, '+ NamePlayer + ' a trouvé ' + MyMessage);
+	});
+	
+	socket.on('correct Album', function(NamePlayer, MyMessage){
+    All_song[compteur_song].album = "";
+    alert('Bravo, '+ NamePlayer + ' a trouvé ' + MyMessage);
+	});
+  
+  socket.on('delete chat', function(data){
+	document.getElementById("mychat").innerHTML = "";
+  });
+  
+  </script>
